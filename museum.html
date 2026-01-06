@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Creative Handicraft Industry</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/feather-icons"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Poppins;background:linear-gradient(135deg,#0f172a,#312e81,#1e293b);min-height:100vh;color:#e5e7eb;}
+.app{width:1000px;margin:50px auto;background:#020617;border-radius:18px;box-shadow:0 30px 60px rgba(0,0,0,.5);overflow:hidden;}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:20px 30px;background:linear-gradient(135deg,#1e293b,#020617);}
+.brand{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:600;}
+.lang select{background:#020617;color:#e5e7eb;border:1px solid #475569;border-radius:8px;padding:6px 10px;}
+.header{text-align:center;padding:40px 20px 20px;}
+.header h1{margin:0;font-size:34px}
+.header span{color:#94a3b8}
+.controls{display:grid;grid-template-columns:1fr auto auto;gap:12px;padding:20px 40px;}
+.controls input{padding:14px;border-radius:10px;border:none;font-size:16px;}
+.controls button{background:#6366f1;border:none;border-radius:10px;color:white;padding:14px 20px;font-size:15px;cursor:pointer;transition:.3s;}
+.controls button:hover{background:#818cf8;transform:translateY(-2px);}
+.result{display:grid;grid-template-columns:1fr 1fr;gap:30px;padding:40px;animation:fade .6s ease;}
+.card{background:#020617;border-radius:16px;padding:25px;box-shadow:0 20px 40px rgba(0,0,0,.4);}
+.card h2{margin-top:0}
+.card img{width:100%;border-radius:14px;box-shadow:0 15px 30px rgba(0,0,0,.4);}
+#qr-reader{width:300px;margin:20px auto;display:none;}
+.ai-tools{display:flex;gap:14px;margin-top:18px}
+.ai-btn{display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:.35s;position:relative;overflow:hidden;}
+.ai-btn i{width:18px;height:18px}
+.ai-ask{background:linear-gradient(135deg,#7c3aed,#6366f1);color:white;box-shadow:0 10px 25px rgba(99,102,241,.45);}
+.ai-listen{background:linear-gradient(135deg,#0ea5e9,#22d3ee);color:#020617;box-shadow:0 10px 25px rgba(34,211,238,.45);}
+.ai-btn:hover{transform:translateY(-3px) scale(1.03);}
+.ai-btn::after{content:"";position:absolute;width:120%;height:120%;background:rgba(255,255,255,.25);top:-110%;left:-110%;transform:rotate(45deg);transition:.6s;}
+.ai-btn:hover::after{top:-20%;left:-20%;}
+
+/* Audio */
+.audio-player{margin-top:18px;background:#020617;border-radius:14px;padding:14px 18px;box-shadow:0 10px 30px rgba(0,0,0,.4);}
+.audio-controls{display:flex;align-items:center;gap:14px;}
+.play-btn{background:#6366f1;color:white;border:none;border-radius:50%;width:42px;height:42px;cursor:pointer;}
+.progress{flex:1;height:8px;background:#1e293b;border-radius:10px;overflow:hidden;}
+.progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#22d3ee,#6366f1);transition:.2s;}
+
+/* Chat */
+.chat-box{margin-top:18px;display:flex;flex-direction:column;gap:12px;}
+.bubble{max-width:85%;padding:12px 16px;border-radius:16px;font-size:14px;line-height:1.5;}
+.user{align-self:flex-end;background:#6366f1;color:white;}
+.ai{align-self:flex-start;background:#1e293b;color:#e5e7eb;}
+.chat-input{margin-top:14px;display:flex;gap:10px;}
+.chat-input input{flex:1;padding:12px 14px;border-radius:12px;border:none;}
+.chat-input button{padding:12px 18px;border-radius:12px;border:none;background:#6366f1;color:white;cursor:pointer;transition:.3s;}
+.chat-input button:hover{transform:translateY(-2px);}
+
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<div class="nav">
+<div class="brand"><i data-feather="aperture"></i> Creative Handicraft</div>
+<div class="lang">
+<select id="lang" onchange="changeLang()">
+<option value="th">TH</option>
+<option value="en">EN</option>
+</select>
+</div>
+</div>
+
+<div class="header">
+  <h1 id="title" style="font-size:36px;">Creative Handicraft Industry</h1>
+  <div id="subtitle" style="font-size:18px; color:#94a3b8; margin-top:8px;">
+    อุตสาหกรรมหัตถกรรมสร้างสรรค์
+  </div>
+</div>
+
+
+<div class="controls">
+<input id="artID" placeholder="ใส่รหัสผลงาน">
+<button id="scanBtn" onclick="loadArt()">สแกนผลงาน</button>
+<button onclick="startQR()">📷 Scan QR</button>
+</div>
+
+<div id="qr-reader"></div>
+<div id="display"></div>
+
+</div>
+
+<script>
+feather.replace()
+
+let currentLang="th", currentArtwork=null
+let utterance=null
+let isPlaying=false
+
+const UI={
+th:{title:"Museum AI Guide",subtitle:"นิทรรศการดิจิทัลเชิงโต้ตอบ",input:"ใส่รหัสผลงาน",scan:"สแกนผลงาน",notfound:"ไม่พบข้อมูลผลงาน",listen:"ฟังเสียง"},
+en:{title:"Museum AI Guide",subtitle:"Interactive Digital Exhibition",input:"Enter Artwork ID",scan:"Scan Artwork",notfound:"Artwork not found",listen:"Listen"}
+}
+
+function changeLang(){
+currentLang=lang.value
+title.innerText=UI[currentLang].title
+subtitle.innerText=UI[currentLang].subtitle
+artID.placeholder=UI[currentLang].input
+scanBtn.innerText=UI[currentLang].scan
+}
+
+function loadArt(){
+const id=artID.value.trim()
+if(!id){display.innerHTML="";return}
+
+fetch("http://localhost/museum_project/backend/artwork.php?id="+id)
+.then(res=>res.json())
+.then(d=>{
+if(d.error){
+display.innerHTML="<p style='text-align:center'>"+UI[currentLang].notfound+"</p>"
+return
+}
+
+currentArtwork=d
+
+display.innerHTML=`
+<div class="result">
+<div class="card">
+<h2>${d.title}</h2>
+<h4>${d.artist}</h4>
+<p id="desc">${d.description}</p>
+
+<div class="audio-player">
+<div class="audio-controls">
+<button id="playBtn" class="play-btn" onclick="toggleAudio()">▶</button>
+<div class="progress"><div id="progressBar" class="progress-bar"></div></div>
+</div>
+</div>
+
+<div id="chatBox" class="chat-box"></div>
+
+<div class="chat-input">
+<input id="questionInput" placeholder="พิมพ์คำถามถึง AI...">
+<button onclick="sendQuestion()">ส่ง</button>
+</div>
+</div>
+
+<div class="card"><img src="${d.image_url}"></div>
+</div>
+`
+feather.replace()
+})
+}
+
+/* ===== AUDIO CONTROL ===== */
+
+function toggleAudio(){
+const btn=document.getElementById("playBtn")
+
+if(!isPlaying){
+startAudio()
+btn.innerText="⏸"
+}else{
+stopAudio()
+btn.innerText="▶"
+}
+}
+
+function startAudio(){
+const text=document.getElementById("desc").innerText
+speechSynthesis.cancel()
+utterance=new SpeechSynthesisUtterance(text)
+speechSynthesis.speak(utterance)
+isPlaying=true
+animateProgress()
+}
+
+function stopAudio(){
+speechSynthesis.cancel()
+isPlaying=false
+}
+
+function animateProgress(){
+const bar=document.getElementById("progressBar")
+let w=0
+bar.style.width="0%"
+const timer=setInterval(()=>{
+if(!isPlaying){clearInterval(timer);return}
+w++
+bar.style.width=w+"%"
+if(w>=100) clearInterval(timer)
+},80)
+}
+
+/* ===== AI CHAT (REAL) ===== */
+
+async function sendQuestion(){
+const input=document.getElementById("questionInput")
+const q=input.value.trim()
+if(!q||!currentArtwork) return
+
+const chat=document.getElementById("chatBox")
+chat.innerHTML+=`<div class="bubble user">${q}</div>`
+input.value=""
+
+const loadingBubble=document.createElement("div")
+loadingBubble.className="bubble ai"
+loadingBubble.innerText="✨ AI กำลังคิดคำตอบ..."
+chat.appendChild(loadingBubble)
+
+const res=await fetch("https://api.openai.com/v1/chat/completions",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer YOUR_OPENAI_API_KEY"
+},
+body:JSON.stringify({
+model:"gpt-4.1-mini",
+messages:[{role:"user",content:`Artwork: ${currentArtwork.title} by ${currentArtwork.artist}. Description: ${currentArtwork.description}. Question: ${q}`}]
+})
+})
+
+const data=await res.json()
+loadingBubble.innerText=data.choices[0].message.content
+}
+
+/* ===== QR ===== */
+
+let qr
+function startQR(){
+document.getElementById("qr-reader").style.display="block"
+qr=new Html5Qrcode("qr-reader")
+qr.start({facingMode:"environment"},{fps:10,qrbox:250},text=>{
+artID.value=text
+qr.stop()
+document.getElementById("qr-reader").style.display="none"
+loadArt()
+})
+}
+</script>
+
+</body>
+</html>
