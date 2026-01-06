@@ -112,7 +112,7 @@ function loadArt(){
 const id=artID.value.trim()
 if(!id){display.innerHTML="";return}
 
-fetch("http://localhost/museum_project/backend/artwork.php?id="+id)
+fetch("https://yourname.infinityfreeapp.com/backend/artwork.php?id="+id)
 .then(res=>res.json())
 .then(d=>{
 if(d.error){
@@ -240,3 +240,4 @@ loadArt()
 
 </body>
 </html>
+
